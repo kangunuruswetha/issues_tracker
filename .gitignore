@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# Docker
+*.swp
+*.bak
+*.tmp
+*.log
+
+# Environment variables
+.env
+.env.*
+*/.env
+*/.env.*
+
+# IDE specific files (e.g., VS Code)
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Logs from application
+*.log
+logs/

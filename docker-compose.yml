@@ -1,0 +1,97 @@
+services:
+  backend:
+    build: .
+    container_name: issues_backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy # <-- ADD THIS LINE for 'db'
+      redis:
+        condition: service_started # <-- It's good practice to add this for redis too
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=issue_tracker
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+    expose:
+      - "8000"
+
+  db:
+    image: postgres:15
+    container_name: issues_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: issue_tracker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: issues_redis
+    restart: always
+    expose:
+      - "6379"
+
+  worker:
+    build: .
+    container_name: issues_worker
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=issue_tracker
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+
+  scheduler:
+    build: .
+    container_name: issues_scheduler
+    command: celery -A app.worker.celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=issue_tracker
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+
+  nginx:
+    image: nginx:alpine
+    container_name: issues_nginx
+    ports:
+      - "80:80"
+      - "8000:8000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  uploads:
