@@ -1,10 +1,10 @@
 import { get } from 'svelte/store';
-import { token } from '$lib/stores/auth.js';
+import { accessToken } from '$lib/stores/auth.js'; // Corrected: Import accessToken, not token
 import { browser } from '$app/environment';
 
 const API_BASE = browser ? '/api' : 'http://localhost:8000';
 
-class ApiError extends Error {
+export class ApiError extends Error { // Export ApiError class
     constructor(message, status, data) {
         super(message);
         this.status = status;
@@ -14,7 +14,7 @@ class ApiError extends Error {
 
 async function apiCall(endpoint, options = {}) {
     const url = `${API_BASE}${endpoint}`;
-    const currentToken = get(token);
+    const currentAccessToken = get(accessToken); // Corrected: Use get(accessToken)
 
     const config = {
         headers: {
@@ -24,8 +24,8 @@ async function apiCall(endpoint, options = {}) {
         ...options
     };
 
-    if (currentToken) {
-        config.headers.Authorization = `Bearer ${currentToken}`;
+    if (currentAccessToken) {
+        config.headers.Authorization = `Bearer ${currentAccessToken}`;
     }
 
     try {
@@ -45,7 +45,7 @@ async function apiCall(endpoint, options = {}) {
             return await response.json();
         }
         
-        return response;
+        return response; // Return response object if not JSON
     } catch (error) {
         if (error instanceof ApiError) {
             throw error;
@@ -113,5 +113,3 @@ export const issuesApi = {
         return apiCall('/issues/dashboard/stats');
     }
 };
-
-export { ApiError };

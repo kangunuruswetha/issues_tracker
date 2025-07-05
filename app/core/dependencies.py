@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from app.database.database import get_db
 from app.models.models import User, UserRole
-from app.core.auth import SECRET_KEY, ALGORITHM
 from typing import List, Optional
+
+# Import SECRET_KEY and ALGORITHM from app.core.config
+from app.core.config import SECRET_KEY, ALGORITHM # MODIFIED LINE
 
 security = HTTPBearer()
 
@@ -16,7 +18,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     try:
         token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id: str = payload.get("sub") # 'sub' claim holds the email
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -30,7 +32,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    # MODIFIED LINE: Query by email (user_id from 'sub' claim) instead of User.id
+    user = db.query(User).filter(User.email == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

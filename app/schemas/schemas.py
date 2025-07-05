@@ -67,6 +67,12 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+# NEW SCHEMA: TokenData (for JWT payload)
+class TokenData(BaseModel):
+    email: Optional[str] = None
+    # You might also include other fields from your JWT payload, e.g.,
+    # roles: Optional[str] = None # if you store roles directly in the token sub field
+
 # -------------------------
 # Dashboard & Stats Schemas
 # -------------------------
@@ -80,3 +86,4 @@ class DashboardStats(BaseModel):
 class WebSocketMessage(BaseModel):
     type: str  # "issue_created", "issue_updated", "issue_deleted"
     data: dict
+    

@@ -5,6 +5,10 @@ from app.core.websocket import manager
 from app.core.dependencies import get_current_user
 from sqlalchemy.orm import Session
 import logging
+from sqlalchemy import text # Import text for raw SQL execution
+
+# Import your enum classes from models
+from app.models.models import UserRole, IssueStatus, IssueSeverity
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +21,52 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# NEW: Robustly create database enum types and tables on startup
+@app.on_event("startup")
+def startup_event():
+    logger.info("Ensuring database enum types and tables exist...")
+    
+    # Get a connection to execute raw SQL for enum types
+    with engine.connect() as connection:
+        # Create UserRole enum type if it doesn't exist
+        user_role_values = ", ".join([f"'{role.value}'" for role in UserRole])
+        connection.execute(text(f"""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
+                    CREATE TYPE userrole AS ENUM ({user_role_values});
+                END IF;
+            END $$;
+        """))
+        
+        # Create IssueStatus enum type if it doesn't exist
+        issue_status_values = ", ".join([f"'{status.value}'" for status in IssueStatus])
+        connection.execute(text(f"""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'issuestatus') THEN
+                    CREATE TYPE issuestatus AS ENUM ({issue_status_values});
+                END IF;
+            END $$;
+        """))
+
+        # Create IssueSeverity enum type if it doesn't exist
+        issue_severity_values = ", ".join([f"'{severity.value}'" for severity in IssueSeverity])
+        connection.execute(text(f"""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'issueseverity') THEN
+                    CREATE TYPE issueseverity AS ENUM ({issue_severity_values});
+                END IF;
+            END $$;
+        """))
+        
+        connection.commit() # Commit the enum type creation
+
+    # Now, create all tables (which might depend on the enums)
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database enum types and tables ensured.")
+
 # Include routers
 app.include_router(user.router)
 app.include_router(issue.router)
-
-# Create tables on startup (auto-generates from SQLAlchemy models)
-Base.metadata.create_all(bind=engine)
 
 # WebSocket endpoint for real-time updates
 @app.websocket("/ws")
