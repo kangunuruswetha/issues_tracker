@@ -114,19 +114,16 @@ Clone the repository:
 git clone https://github.com/kangunuruswetha/issues_tracker.git
 cd issues_tracker
 
-
 Build and run Docker containers:
 This command will build the Docker images (if not already built) and start all services defined in docker-compose.yml in detached mode. This command also forces a rebuild to ensure all latest changes are applied.
 
 docker compose down --volumes # Optional: Use this to ensure a completely clean slate, deleting all old containers, networks, and volumes (including database data).
 docker compose up --build -d
 
-
 Perform database migrations (initial setup):
 Once containers are up and running, apply the necessary database schema to your PostgreSQL container.
 
 docker compose exec backend alembic upgrade head
-
 
 This command needs to be run only once, or whenever there are new database migrations.
 
@@ -136,7 +133,6 @@ While the docker-compose.yml includes a frontend service, for development and im
 cd frontend
 npm install # Only needed if node_modules is not present or dependencies changed
 npm run dev
-
 
 (Note: If port 3000 is in use, Vite will automatically pick another port, e.g., 3001. Check your terminal output.)
 
@@ -199,7 +195,6 @@ Ensure your Docker containers are running (docker compose up -d).
 Execute tests within the backend service container:
 
 docker compose exec backend pytest
-
 
 (If you have frontend E2E tests, add instructions here, e.g., cd frontend && npm install && npm run test:e2e).
 
